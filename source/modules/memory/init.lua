@@ -187,7 +187,7 @@ end
 function memory.readUInt(addr)
 	if not process:hasProcess() then return 0 end
 	local output = cache("uint32_t")
-	process:read(addr, output, ffi.sizeof(output))
+	process:read(addr, output, 4)
 	return bswap(output[0])
 end
 
@@ -279,18 +279,103 @@ function memory.newvalue(addr, offset, struct, name)
 	}, ADDRESS)
 end
 
-local function handleNumTargetChange(numTargetsLeft, prevNumTargetsLeft)
-	isPlaying = memory.readBool(0x8046B6A0 + 0x0005, 0)
-	if not isPlaying and (numTargetsLeft == 0 or numTargetsLeft == 10) then return end
+local function getNumTargetsLeft()
+	return memory.readShort(0x8049e6c8 + 0x06D4, 0)
+end
 
-	targetNum = 10 - numTargetsLeft
-	frame = memory.readUInt(0x80479D60, 0) - 84 - 40 -- ready and go frames...roughly
+local function getActionState()
+	return memory.readUInt(0x80C8A5B0, 0)
+end
+
+local function getXPosition()
+	return memory.readFloat(0x80453080 + 0x010, 0)
+end
+
+local function getYPosition()
+	return memory.readFloat(0x80453080 + 0x014, 0)
+end
+
+local function getXVelocity()
+	return memory.readFloat(-0x7f3759e0)
+end
+
+local function getYVelocity()
+	return memory.readFloat(-0x7f3759dc)
+end
+
+local function getHumanReadableTime()
+	local frame = memory.readUInt(0x80479D60, 0) - 84 - 40 -- ready and go frames...roughly
 	if frame < 1 then
-		log.debug("Target %d hit on frame %d", targetNum, frame + 40)
-	else
-		seconds = math.floor((frame / 60) % 60)
-		centis = math.floor((frame % 60) * 99 / 59)
-		log.debug("Target %d hit at %d.%02d", targetNum, seconds, centis)
+		return string.format("frame %d", frame + 40)
+	end
+	local seconds = math.floor((frame / 60) % 60)
+	local centis = math.floor((frame % 60) * 99 / 59)
+	return string.format("%d.%02d", seconds, centis)
+end
+
+local function handleNumTargetChange(numTargetsLeft, prevNumTargetsLeft)
+	local isPlaying = memory.readBool(0x8046B6A0 + 0x0005, 0)
+	if not isPlaying and (numTargetsLeft == 0 or numTargetsLeft == 10) then return end
+	local xPos = getXPosition()
+	local yPos = getYPosition()
+	local time = getHumanReadableTime()
+	local actionState = getActionState()
+
+	local targetNum = 10 - numTargetsLeft
+	-- log.debug("Target %d hit at %s, xPos: %f, yPos: %f", targetNum, time, xPos, yPos)
+	-- split 4
+	if actionState == 0x164 and xPos > 70 and xPos < 110 and yPos > -90 and yPos < -50 then
+		log.debug("Split 4: %s", time)
+	end
+	-- split 7
+	if actionState == 0x164 and xPos > -9 and xPos < 9 and yPos > -120 and yPos < -90 then
+		log.debug("Split 7: %s", time)
+	end
+	-- split 8
+	if xPos > -110 and xPos < -70 and yPos > -70 and yPos < -30 then
+		log.debug("Split 8: %s", time)
+	end
+end
+
+-- local function handleFrameChange()
+-- 	-- local numTargetsLeft = getNumTargetsLeft()
+-- 	local yPos = getYPosition()
+-- 	local xVelocity = getXVelocity()
+-- 	local yVelocity = getYVelocity()
+-- 	-- local actionState = getActionState()
+-- 	local time = getHumanReadableTime()
+-- 	-- log.debug("actionState: %d", actionState)
+
+	
+-- end
+
+local function handleActionStateChange(actionState, prevActionState)
+	local xPos = getXPosition()
+	local yPos = getYPosition()
+	local xVelocity = getXVelocity()
+	local yVelocity = getYVelocity()
+	local time = getHumanReadableTime()
+	local actionState = getActionState()
+	-- log.debug("TIME: %s, actionState : %d, yPos: %f, xVelocity: %f, xPos: %f", time, actionState, yPos, xVelocity, xPos)
+	-- split 1
+	if actionState == 0x1A and yPos > 60 and yPos < 63 and yVelocity > 0 then
+		log.debug("Split 1: %s", time)
+	end
+	-- split 2
+	if actionState == 0x2A and yPos < -29.9 and yPos > -30 then
+		log.debug("Split 2: %s", time)
+	end
+	-- split 3
+	if actionState == 0x1D and yPos > -21 and yPos < -19.9 and xVelocity > 0 and xPos > 69 and xPos < 80 then
+		log.debug("Split 3: %s", time)
+	end
+	-- split 5
+	if actionState == 0x1D and xVelocity < 0 and xPos > 45 and xPos < 52 then
+		log.debug("Split 5: %s", time)
+	end
+	-- split 6
+	if actionState == 0x1D and yPos < -59.9 and xVelocity < 0 and xPos > 8 and xPos < 12 then
+		log.debug("Split 6: %s", time)
 	end
 end
 
@@ -303,19 +388,28 @@ function ADDRESS:update()
 
 	-- Check if there has been a value change
 	if self.cache_value ~= value then
+		local prev_value = self.cache_value
 		if self.address == 0x8049e6c8 + 0x06D4 then
 			handleNumTargetChange(value, self.cache_value)
+		-- elseif self.address == 0x80479D60 then
+		-- 	handleFrameChange()
+		-- elseif self.address + self.offset == -0x7f3759dc then
+		-- 	handleYVelocityChange(value, self.cache_value)
+		-- elseif self.address == 0x80453080 + 0x014 then
+		-- 	handleYPositionChange(value, self.cache_value)
+		elseif self.address + self.offset == -0x7f375a50 then
+			handleActionStateChange(value, self.cache_value)
 		end
 		self.cache_value = value
 		self.cache[self.cache_key] = self.cache_value
 
 		if self.debug then
 			local numValue = tonumber(orig) or tonumber(value) or (value and 1 or 0)
-			-- log.debug("[MEMORY] [0x%08X  = 0x%08X] %s = %s", self.address + self.offset, numValue, self.name, value)
+			log.debug("[MEMORY] [%d  = 0x%08X] %s = %s", self.address + self.offset, numValue, self.name, value)
 		end
 
 		-- Queue up a hook event
-		table.insert(memory.hook_queue, {name = self.name, value = value, debug = self.debug})
+		table.insert(memory.hook_queue, {name = self.name, value = value, prev_value = prev_value, debug = self.debug})
 	end
 end
 
@@ -404,8 +498,9 @@ do
 	end
 end
 
-function memory.loadmap(map)
-	for address, struct in pairs(map) do
+function memory.loadmap(map, ordered_addresses)
+	for _, address in pairs(ordered_addresses) do
+		local struct = map[address]
 		if struct.type == "pointer" then
 			memory.map[address] = memory.newpointer(address, NULL, struct)
 		else
@@ -462,7 +557,7 @@ function memory.loadGameScript(path)
 		memory.supportedgame = true
 		memory.game = game
 		log.info("[DOLPHIN] Loaded game config: %s", path)
-		memory.init(game.memorymap)
+		memory.init(game.memorymap, game.ordered_addresses)
 	else
 		memory.supportedgame = false
 		notification.error(("Unsupported game %s"):format(path))
@@ -571,9 +666,9 @@ function memory.update()
 	end
 end
 
-function memory.init(map)
+function memory.init(map, ordered_addresses)
 	memory.initialized = true
-	memory.loadmap(map)
+	memory.loadmap(map, ordered_addresses)
 	log.info("[MEMORY] Mapped game memory structure")
 end
 
@@ -624,7 +719,7 @@ function memory.runhooks()
 	while true do
 		pop = table.remove(memory.hook_queue, 1)
 		if not pop then break end
-		memory.runhook(pop.name, pop.value)
+		memory.runhook(pop.name, pop.value, pop.prev_value)
 	end
 end
 

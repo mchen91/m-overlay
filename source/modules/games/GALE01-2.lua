@@ -1,8 +1,16 @@
 -- Super Smash Bros. Melee (NTSC v1.2) / Dairantou Smash Brothers DX (Japan v1.2)
 
 local game = {
-	memorymap = {}
+	memorymap = {},
+	ordered_addresses = {},
 }
+
+setmetatable(game.memorymap, {
+	__newindex = function (t, k, v)
+		game.ordered_addresses[#game.ordered_addresses+1] = k
+		rawset(game.memorymap, k, v)
+	end
+})
 
 -- Controls/Saves the volume levels of the game
 game.memorymap[0x8045C384] = { type = "s8", name = "volume.slider" } -- Scale is (-100 to 100)
@@ -12,10 +20,10 @@ game.memorymap[0x804D3887] = { type = "u8", name = "volume.music" } -- Scale is 
 game.memorymap[0x804D388F] = { type = "u8", name = "volume.ui" } -- Scale is (0-127)
 
 game.memorymap[0x80479D60] = { type = "u32", name = "frame" }
-game.memorymap[0x8049E753] = { type = "u8", name = "stage", debug = true }
-game.memorymap[0x80479D30] = { type = "u8", name = "menu.major", debug = true }
-game.memorymap[0x80479D33] = { type = "u8", name = "menu.minor", debug = true }
-game.memorymap[0x804D6598] = { type = "u8", name = "menu.player_one_port", debug = true } -- What port is currently acting as "Player 1" in single player games
+game.memorymap[0x8049E753] = { type = "u8", name = "stage", debug = false }
+game.memorymap[0x80479D30] = { type = "u8", name = "menu.major", debug = false }
+game.memorymap[0x80479D33] = { type = "u8", name = "menu.minor", debug = false }
+game.memorymap[0x804D6598] = { type = "u8", name = "menu.player_one_port", debug = false } -- What port is currently acting as "Player 1" in single player games
 game.memorymap[0x804807C8] = { type = "bool", name = "menu.teams" }
    
 local controllers = {
@@ -69,6 +77,8 @@ local player_static_struct = {
 	[0x004] = { type = "u32", name = "character" },
 	[0x008] = { type = "u32", name = "mode" },
 	[0x00C] = { type = "u16", name = "transformed" },
+	[0x010] = { type = "float", name = "position_x", debug = false },
+	[0x014] = { type = "float", name = "position_y", debug = false },
 	[0x044] = { type = "u8", name = "skin" },
 	--[0x045] = { type = "u8", name = "port" },
 	[0x046] = { type = "u8", name = "color" },
@@ -94,6 +104,9 @@ for id, address in ipairs(player_static_addresses) do
 			struct = {
 				[0x60 + 0x0004] = { type = "u32", name = "character" },
 				--[0x60 + 0x000C] = { type = "u8", name = "port" },
+				[0x60 + 0x0010] = { type = "u32", name = "action_state", debug = false },
+				[0x60 + 0x0080] = { type = "float", name = "self_induced_velocity_x", debug = false },
+				[0x60 + 0x0084] = { type = "float", name = "self_induced_velocity_y", debug = false },
 				--[0x60 + 0x0618] = { type = "u8", name = "index" },
 				[0x60 + 0x0619] = { type = "u8", name = "skin" },
 				[0x60 + 0x061A] = { type = "u8", name = "color" },
@@ -131,7 +144,7 @@ game.memorymap[CSSDT_BUF_ADDR] = {
 				[0x00] = { type = "u8", name = "connection_state" },
 				[0x01] = { type = "u8", name = "local_player.ready" },
 				[0x02] = { type = "u8", name = "remote_player.ready" },
-				[0x03] = { type = "u8", name = "local_player.index", debug = true },
+				[0x03] = { type = "u8", name = "local_player.index", debug = false },
 				[0x04] = { type = "u8", name = "remote_player.index" },
 				[0x05] = { type = "u32", name = "rng_offset" },
 				[0x06] = { type = "u8", name = "delay_frames" },
@@ -208,9 +221,9 @@ game.memorymap[0x804D640F] = { type = "bool", name = "match.paused" }
 
 local match_info = 0x8046B6A0
 local match_info_struct = {
-	[0x0005] = { type = "bool", name = "match.playing", debug = true },
-	[0x0008] = { type = "u8", name = "match.result", debug = true },
-	[0x000E] = { type = "bool", name = "match.finished", debug = true },
+	[0x0005] = { type = "bool", name = "match.playing", debug = false },
+	[0x0008] = { type = "u8", name = "match.result", debug = false },
+	[0x000E] = { type = "bool", name = "match.finished", debug = false },
 }
 
 local player_cursors_pointers = {
