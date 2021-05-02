@@ -177,8 +177,66 @@ memory.hook("player.*.character", "Show port on character select", function(port
 	end
 end)
 
-memory.hook("targets_left", "Record target break split", function(targetsLeft, prevTargetsLeft)
+local function getHumanReadableTime()
+	frame = memory.frame - 84 - 40 -- ready and go frames...roughly
+	if frame < 1 then
+		return string.format("frame %d", frame + 40)
+	end
+	local seconds = math.floor((frame / 60) % 60)
+	local centis = math.floor((frame % 60) * 99 / 59)
+	return string.format("%d.%02d", seconds, centis)
+end
 
+memory.hook("targets_left", "Record target break split", function(numTargetsLeft)
+	if not memory.match.playing and (numTargetsLeft == 0 or numTargetsLeft == 10) then return end
+	local port = love.getPort()
+	local xPos = memory.player[port].position_x
+	local yPos = memory.player[port].position_y
+	local time = getHumanReadableTime()
+	local actionState = memory.player[port].entity.action_state
+	local targetNum = 10 - numTargetsLeft
+	-- log.debug("Target %d hit at %s, xPos: %f, yPos: %f, actionState: %d", targetNum, time, xPos, yPos, actionState)
+	-- split 4
+	if actionState == 0x164 and xPos > 70 and xPos < 110 and yPos > -90 and yPos < -50 then
+		log.debug("Split 4: %s", time)
+	end
+	-- split 7
+	if actionState == 0x164 and xPos > -9 and xPos < 9 and yPos > -120 and yPos < -90 then
+		log.debug("Split 7: %s", time)
+	end
+	-- split 8
+	if xPos > -110 and xPos < -70 and yPos > -70 and yPos < -30 then
+		log.debug("Split 8: %s", time)
+	end
+end)
+
+memory.hook("player.*.entity.action_state", "Record action state change split", function(port, actionState)
+	local xPos = memory.player[port].position_x
+	local yPos = memory.player[port].position_y
+	local xVelocity = memory.player[port].entity.self_induced_velocity_x
+	local yVelocity = memory.player[port].entity.self_induced_velocity_y
+	local time = getHumanReadableTime()
+	-- log.debug("TIME: %s, actionState : %d, yPos: %f, xVelocity: %f, xPos: %f", time, actionState, yPos, xVelocity, xPos)
+	-- split 1
+	if (actionState == 0x19 or actionState == 0x1A) and yPos > 60 and yPos < 63 and yVelocity > 0 then
+		log.debug("Split 1: %s", time)
+	end
+	-- split 2
+	if actionState == 0x2A and yPos < -29.9 and yPos > -30 then
+		log.debug("Split 2: %s", time)
+	end
+	-- split 3
+	if actionState == 0x1D and yPos > -21 and yPos < -19.9 and xVelocity > 0 and xPos > 69 and xPos < 80 then
+		log.debug("Split 3: %s", time)
+	end
+	-- split 5
+	if actionState == 0x1D and xVelocity < 0 and xPos > 45 and xPos < 52 then
+		log.debug("Split 5: %s", time)
+	end
+	-- split 6
+	if actionState == 0x1D and yPos < -59.9 and xVelocity < 0 and xPos > 8 and xPos < 12 then
+		log.debug("Split 6: %s", time)
+	end
 end)
 
 function love.update(dt)
