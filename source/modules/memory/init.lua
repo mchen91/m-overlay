@@ -187,7 +187,7 @@ end
 function memory.readUInt(addr)
 	if not process:hasProcess() then return 0 end
 	local output = cache("uint32_t")
-	process:read(addr, output, 4)
+	process:read(addr, output, ffi.sizeof(output))
 	return bswap(output[0])
 end
 
@@ -293,7 +293,7 @@ function ADDRESS:update()
 
 		if self.debug then
 			local numValue = tonumber(orig) or tonumber(value) or (value and 1 or 0)
-			log.debug("[MEMORY] [%d  = 0x%08X] %s = %s", self.address + self.offset, numValue, self.name, value)
+			log.debug("[MEMORY] [0x%08X  = 0x%08X] %s = %s", self.address + self.offset, numValue, self.name, value)
 		end
 
 		-- Queue up a hook event
@@ -386,9 +386,8 @@ do
 	end
 end
 
-function memory.loadmap(map, ordered_addresses)
-	for _, address in pairs(ordered_addresses) do
-		local struct = map[address]
+function memory.loadmap(map)
+	for address, struct in pairs(map) do
 		if struct.type == "pointer" then
 			memory.map[address] = memory.newpointer(address, NULL, struct)
 		else
@@ -445,7 +444,7 @@ function memory.loadGameScript(path)
 		memory.supportedgame = true
 		memory.game = game
 		log.info("[DOLPHIN] Loaded game config: %s", path)
-		memory.init(game.memorymap, game.ordered_addresses)
+		memory.init(game.memorymap)
 	else
 		memory.supportedgame = false
 		notification.error(("Unsupported game %s"):format(path))
@@ -554,9 +553,9 @@ function memory.update()
 	end
 end
 
-function memory.init(map, ordered_addresses)
+function memory.init(map)
 	memory.initialized = true
-	memory.loadmap(map, ordered_addresses)
+	memory.loadmap(map)
 	log.info("[MEMORY] Mapped game memory structure")
 end
 
