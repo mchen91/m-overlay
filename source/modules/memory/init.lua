@@ -1,6 +1,7 @@
 local bit = require("bit")
 local ffi = require("ffi")
 local log = require("log")
+local splits = require("splits")
 local cloneloader = require("memory.cloneloader")
 local process = require("memory." .. jit.os:lower())
 local notification = require("notification")
@@ -445,6 +446,7 @@ function memory.loadGameScript(path)
 		memory.game = game
 		log.info("[DOLPHIN] Loaded game config: %s", path)
 		memory.init(game.memorymap)
+		memory.initSplits()
 	else
 		memory.supportedgame = false
 		notification.error(("Unsupported game %s"):format(path))
@@ -660,6 +662,36 @@ do
 				end
 			end
 		end
+	end
+end
+
+local function getHumanReadableTime()
+	frame = memory.frame - 84 - 40 -- ready and go frames...roughly
+	if frame < 1 then
+		return string.format("frame %d", frame + 40)
+	end
+	local seconds = math.floor((frame / 60) % 60)
+	local centis = math.floor((frame % 60) * 99 / 59)
+	return string.format("%d.%02d", seconds, centis)
+end
+
+function memory.initSplits()
+	local port = love.getPort()
+	for index, split in pairs(splits) do
+		memory.hook(split.attribute, split.description, function (value)
+			local time = getHumanReadableTime()
+			local game_state = {
+				xPos = memory.player[port].position_x,
+				yPos = memory.player[port].position_y,
+				xVelocity = memory.player[port].entity.self_induced_velocity_x,
+				yVelocity = memory.player[port].entity.self_induced_velocity_y,
+				actionState = memory.player[port].entity.action_state,
+			}
+			-- TODO: pass prev value of hooked attribute to callback?
+			if split.condition(game_state) then
+				log.debug("Split %d: %s", index, time)
+			end
+		end)
 	end
 end
 
