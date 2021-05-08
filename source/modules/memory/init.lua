@@ -666,13 +666,27 @@ do
 end
 
 local function getHumanReadableTime()
-	frame = memory.frame - 84 - 40 -- ready and go frames...roughly
+	local frame = memory.match.timer.frame
 	if frame < 1 then
-		return string.format("frame %d", frame + 40)
+		return string.format("%d", frame + 40)
 	end
 	local seconds = math.floor((frame / 60) % 60)
 	local centis = math.floor((frame % 60) * 99 / 59)
 	return string.format("%d.%02d", seconds, centis)
+end
+
+local function getFrameFromTimeString(timestring)
+	local time = tonumber(timestring)
+	if not string.find(timestring, ".") then
+		return time
+	end
+	return math.floor(time * 60 + 0.5)
+end
+
+local function subtractTimes(timestring1, timestring2)
+	local frame1 = getFrameFromTimeString(timestring1)
+	local frame2 = getFrameFromTimeString(timestring2)
+	return frame1 - frame2
 end
 
 function memory.initSplits()
@@ -689,7 +703,13 @@ function memory.initSplits()
 			}
 			-- TODO: pass prev value of hooked attribute to callback?
 			if split.condition(game_state) then
-				log.debug("Split %d: %s", index, time)
+				if split.best then
+					local delta = subtractTimes(time, split.best)
+					local sign = delta >= 0 and "+" or ""
+					log.debug("Split %d: %s (%s%df)", index, time, sign, delta)
+				else
+					log.debug("Split %d: %s", index, time)
+				end
 			end
 		end)
 	end

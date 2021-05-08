@@ -216,6 +216,7 @@ local match_info_struct = {
 	[0x0005] = { type = "bool", name = "match.playing", debug = false },
 	[0x0008] = { type = "u8", name = "match.result", debug = false },
 	[0x000E] = { type = "bool", name = "match.finished", debug = false },
+	[0x0026] = { type = "u16", name = "match.timer.frame" },
 }
 
 local player_cursors_pointers = {
