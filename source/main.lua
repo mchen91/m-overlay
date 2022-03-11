@@ -37,7 +37,7 @@ local newImage = graphics.newImage
 local PORT_FONT = graphics.newFont("fonts/melee-bold.otf", 42)
 local WAITING_FONT = graphics.newFont("fonts/melee-bold.otf", 24)
 local DEBUG_FONT = graphics.newFont("fonts/melee-bold.otf", 12)
-local PERCENT_FONT = graphics.newFont("fonts/melee-bold.otf", 64)
+local DAMAGE_FONT = graphics.newFont("fonts/melee-bold.otf", 64)
 
 local GRADIENT = newImage("textures/gui/gradient.png")
 local DOLPHIN = newImage("textures/dolphin.png")
@@ -402,9 +402,9 @@ function love.drawControllerOverlay()
 				xoff = xoff + DAMAGE_FONT:getWidth(sandbag_damage) + 8
 
 				graphics.setColor(0, 0, 0, 255)
-				graphics.textOutline(strcx, 2, 512 - xoff, 256 - 4 - 64)
+				graphics.textOutline(sandbag_damage, 2, 512 - xoff, 256 - 4 - 64)
 
-				graphics.setFont(PERCENT_FONT)
+				graphics.setFont(DAMAGE_FONT)
 				graphics.setColor(255, 255, 255, 255)
 				graphics.print(sandbag_damage, 512 - xoff, 256 - 4 - 64)
 				graphics.setFont(DEBUG_FONT)
