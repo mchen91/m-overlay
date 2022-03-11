@@ -37,6 +37,7 @@ local newImage = graphics.newImage
 local PORT_FONT = graphics.newFont("fonts/melee-bold.otf", 42)
 local WAITING_FONT = graphics.newFont("fonts/melee-bold.otf", 24)
 local DEBUG_FONT = graphics.newFont("fonts/melee-bold.otf", 12)
+local PERCENT_FONT = graphics.newFont("fonts/melee-bold.otf", 64)
 
 local GRADIENT = newImage("textures/gui/gradient.png")
 local DOLPHIN = newImage("textures/dolphin.png")
@@ -396,18 +397,17 @@ function love.drawControllerOverlay()
 			end
 
 			if PANEL_SETTINGS:IsDebuggingCStick() then
-				local strcx = ("CX: % .4f"):format(cx)
-				local strcy = ("CY: % .4f"):format(cy)
+				local sandbag_damage = ("% .4f%%"):format(memory.player[2].entity.damage)
 
-				xoff = xoff + DEBUG_FONT:getWidth(strcx) + 8
+				xoff = xoff + DAMAGE_FONT:getWidth(sandbag_damage) + 8
 
 				graphics.setColor(0, 0, 0, 255)
-				graphics.textOutline(strcx, 2, 512 - xoff, 256 - 4 - 24)
-				graphics.textOutline(strcy, 2, 512 - xoff, 256 - 4 - 12)
+				graphics.textOutline(strcx, 2, 512 - xoff, 256 - 4 - 64)
 
+				graphics.setFont(PERCENT_FONT)
 				graphics.setColor(255, 255, 255, 255)
-				graphics.print(strcx, 512 - xoff, 256 - 4 - 24)
-				graphics.print(strcy, 512 - xoff, 256 - 4 - 12)
+				graphics.print(sandbag_damage, 512 - xoff, 256 - 4 - 64)
+				graphics.setFont(DEBUG_FONT)
 			end
 
 			if PANEL_SETTINGS:IsDebuggingJoystick() then

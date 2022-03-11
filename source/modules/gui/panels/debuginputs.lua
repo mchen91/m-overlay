@@ -36,10 +36,10 @@ function PANEL:DebugInputs()
 	joystick:SetTooltipTitle("JOYSTICK")
 	joystick:SetTooltipBody([[Show the joystick analog values.]])
 
-	local cstick = self.CHECKPANEL:AddOption(DEBUG_INPUT_C_STICK, "C-Stick")
+	self.CHECKPANEL:AddOption(DEBUG_INPUT_C_STICK, "Sandbag damage")
 	cstick:SetTooltipParent(self.CHECKPANEL)
-	cstick:SetTooltipTitle("C-STICK")
-	cstick:SetTooltipBody([[Show the c-stick analog values.]])
+	cstick:SetTooltipTitle("Sandbag damage")
+	cstick:SetTooltipBody([[Show a more accurate damage on Sandbag.]])
 
 	local triggers = self.CHECKPANEL:AddOption(DEBUG_INPUT_TRIGGERS, "Triggers")
 	triggers:SetTooltipParent(self.CHECKPANEL)

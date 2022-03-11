@@ -117,6 +117,7 @@ for id, address in ipairs(player_static_addresses) do
 				[0x60 + 0x0650] = { type = "float", name = "controller.analog.float" },
 				[0x60 + 0x065C] = { type = "u32",	name = "controller.buttons.pressed" },
 				[0x60 + 0x0660] = { type = "u32",	name = "controller.buttons.pressed_previous" },
+				[0x60 + 0x1830] = { type = "float", name = "damage" },
 
 				--[[
 				[0x60 + 0x1A94] = { type = "u32", name = "cpu_type" },
